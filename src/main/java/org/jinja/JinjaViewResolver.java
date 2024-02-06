@@ -2,6 +2,11 @@ package org.jinja;
 
 import java.nio.charset.Charset;
 
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.view.AbstractTemplateViewResolver;
 import org.springframework.web.servlet.view.AbstractUrlBasedView;
 
@@ -35,14 +40,11 @@ public class JinjaViewResolver extends AbstractTemplateViewResolver {
 		return JinjaView.class;
 	}
 
-	@Override
-	protected AbstractUrlBasedView buildView(String viewName) throws Exception {
-		JinjaView view = (JinjaView) super.buildView(viewName);
-		view.setEngine(this.engine);
-		view.setContentType(contentType);
-		view.setRenderExceptions(renderExceptions);
-		view.setEncoding(charset);
-		return view;
-	}
+    public void setCharset(Charset encoding) {
+		this.charset = encoding;
+    }
 
+	public void setEngine(Jinjava engine) {
+		this.engine = engine;
+	}
 }

@@ -50,4 +50,17 @@ public class JinjaTemplateLoader implements ResourceLocator, ServletContextAware
 				.getResource((fullName.contains(".") ? (basePath + fullName) :
 					(basePath + fullName + suffix))).getFile(), encoding);
 	}
+
+    public void setBasePath(String path) {
+		basePath = path;
+    }
+
+	public void setSuffix(String suffix) {
+		this.suffix = suffix;
+	}
+
+	@Override
+	public void setServletContext(ServletContext servletContext) {
+		this.servletContext = servletContext;
+	}
 }

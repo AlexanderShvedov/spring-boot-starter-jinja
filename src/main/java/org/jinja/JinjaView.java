@@ -1,15 +1,10 @@
 package org.jinja;
 
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.PrintStream;
 import java.nio.charset.Charset;
+import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.springframework.web.servlet.view.AbstractTemplateView;
 
 import com.google.common.base.Charsets;
 import com.hubspot.jinjava.Jinjava;
@@ -17,77 +12,91 @@ import com.hubspot.jinjava.interpret.FatalTemplateErrorsException;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.view.AbstractTemplateView;
+import org.springframework.web.servlet.view.AbstractTemplateViewResolver;
+
+import static org.springframework.aop.interceptor.ExposeBeanNameAdvisors.getBeanName;
 
 /**
  * @author Marco Andreini
  *
  */
-public class JinjaView extends AbstractTemplateView {
+@Component
+public class JinjaView {
 
 	@Getter @Setter
 	private Charset encoding = Charsets.UTF_8;
-	@Getter @Setter
+	@Getter @Setter @Autowired
 	private Jinjava engine;
 	@Getter @Setter
 	private boolean renderExceptions = false;
 	@Getter @Setter
 	private String contentType;
 
-	@Override
-	protected void renderMergedTemplateModel(Map<String, Object> model,
-			HttpServletRequest request, HttpServletResponse response)
-					throws Exception {
 
-		doRender(model, response);
+	public String renderMergedTemplateModel(String fileName, PrintStream logger)
+					throws Exception {
+		return doRender(fileName, logger);
 	}
 
-	private void doRender(Map<String, Object> model,
-			HttpServletResponse response) throws IOException {
-		logger.trace("Rendering Jinja template [" + getUrl() + "] in JinjaView '"
-			+ getBeanName() + "'");
+	private String doRender(String fileName, PrintStream logger) throws IOException {
+		logger.println("Rendering Jinja template [" + fileName + "] in JinjaView '");
 
-		if (contentType != null) {
-			response.setContentType(contentType);
-		}
-
-		PrintWriter responseWriter = response.getWriter();
+		StringBuilder responseWriter =new StringBuilder();
 
 		if (renderExceptions) {
 			try {
-				responseWriter.write(engine.render(getTemplate(), model));
+				responseWriter.append(engine.render(getTemplate(fileName), new HashMap<String, String>()));
 			} catch (FatalTemplateErrorsException e) {
 				// TODO: render exception
-				responseWriter.write(e.getLocalizedMessage());
-				logger.error("failed to render template [" + getUrl() + "]", e);
+				responseWriter.append(e.getLocalizedMessage());
+				logger.println("failed to render template [" + fileName + "] " + e);
 			} catch (IOException e) {
-				responseWriter.write("<pre>could not find template: " + getUrl() + "\n");
-				e.printStackTrace(responseWriter);
-				responseWriter.write("</pre>");
-				logger.error("could not find template", e);
+				responseWriter.append("<pre>could not find template: " + fileName + "\n");
+				logger.println(e.getLocalizedMessage());
+				responseWriter.append("</pre>");
+				logger.println("could not find template " + e);
 			}
 		} else {
 			try {
-				responseWriter.write(engine.render(getTemplate(), model));
+				responseWriter.append(engine.render(getTemplate(fileName), new HashMap<String, String>()));
 			} catch (Throwable e) {
-				logger.error("failed to render template [" + getUrl() + "]\n", e);
+				logger.println("failed to render template [" + fileName + "]\n" + e);
 			}
 		}
+		return responseWriter.toString();
 	}
 
-	protected String getTemplate() throws IOException {
+	protected String getTemplate(String fileName) throws IOException {
 		// XXX: interpreter could be null...
-		return engine.getResourceLocator().getString(getUrl(), encoding,
+		return engine.getResourceLocator().getString(fileName, encoding,
 				null);
 	}
 
-	@Override
 	public boolean checkResource(Locale locale) throws Exception {
 		try {
 			// XXX: interpreter could be null...
-			engine.getResourceLocator().getString(getUrl(), encoding, null);
+			engine.getResourceLocator().getString(locale.toString(), encoding, null);
 			return true;
 		} catch (IOException e) {
 			return false;
 		}
+	}
+    public void setEngine(@Autowired Jinjava engine) {
+		this.engine = engine;
+    }
+
+	public void setRenderExceptions(boolean renderExceptions) {
+		this.renderExceptions = renderExceptions;
+	}
+
+	public void setEncoding(Charset charset) {
+		encoding = charset;
+	}
+
+	public void setContentType(String contentType) {
+		this.contentType = contentType;
 	}
 }
