@@ -28,12 +28,16 @@ public class JinjaView {
 
 	@Getter @Setter
 	private Charset encoding = Charsets.UTF_8;
-	@Getter @Setter @Autowired
+	@Getter @Setter
 	private Jinjava engine;
 	@Getter @Setter
 	private boolean renderExceptions = false;
 	@Getter @Setter
 	private String contentType;
+
+	private JinjaView(@Autowired Jinjava engine) {
+		this.engine = engine;
+	}
 
 
 	public String renderMergedTemplateModel(String fileName, PrintStream logger)
